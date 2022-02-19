@@ -80,16 +80,15 @@ for buyers:
     "role": "buyer",
     "password": "superSecret"
 }`
-<br>
-for sellers (the deposit field must be empty) :
-`{
+for sellers (the deposit field must be empty):
+`
+{
     "username": "whatever",
     "email": "test@test.com",
     "role": "seller",
     "password": "superSecret"
-}`
-
-
+}
+`
 The endpoint returns all user data, including the id, unless the password.<br>
 
 - /get_token POST you have to send username and password which you made in the last step like <br>

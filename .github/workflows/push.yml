@@ -1,0 +1,45 @@
+name: Testing
+on: push
+
+jobs:
+  test_project:
+    runs-on: ubuntu-latest
+    env:
+      POSTGRES_DB: django
+      POSTGRES_USER: django
+      POSTGRES_PASSWORD: django
+      POSTGRES_HOST_AUTH_METHOD: trust
+      DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+      POSTGRES_HOST: localhost
+      REDIS_HOST: localhost
+    services:
+      postgres:
+        image: postgres:14.0
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_DB: django
+          POSTGRES_USER: django
+          POSTGRES_PASSWORD: django
+          POSTGRES_HOST_AUTH_METHOD: trust
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:latest
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+    - uses: actions/checkout@v2
+    - name: run the tests
+      run: |
+        pip3 install --user -r requirements.txt
+        python3 manage.py migrate
+        python3 manage.py test

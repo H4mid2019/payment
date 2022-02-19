@@ -1,0 +1,8 @@
+**/__pycache__/
+.data/
+.dbdata/
+.redis/
+media/
+.env
+.idea/
+venv/

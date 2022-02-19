@@ -1,0 +1,38 @@
+version: '3.8'
+services:
+  backend:
+    container_name: backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: bash -c "chmod +x ./wait-for-postgres.sh && ./wait-for-postgres.sh db 5432 && python manage.py makemigrations && 
+      python manage.py migrate &&
+      gunicorn -w 2 payment.wsgi:application -b 0.0.0.0:8000"
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./.env
+    volumes:
+      - .:/app
+      - /var/run/backend:/var/run
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:14.0
+    container_name: db
+    restart: always
+    env_file:
+      - ./.env
+    volumes:
+      - .dbdata:/var/lib/postgresql/data
+      - .data:/data
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    command: 'redis-server'
+    volumes:
+      - .redis:/data

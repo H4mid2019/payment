@@ -6,4 +6,5 @@ media/
 .env
 .idea/
 venv/
+static/
 *.log

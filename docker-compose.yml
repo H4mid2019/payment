@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: bash -c "chmod +x ./wait-for-postgres.sh && ./wait-for-postgres.sh db 5432 && python manage.py makemigrations && 
+    command: bash -c "chmod +x ./wait-for-postgres.sh && ./wait-for-postgres.sh db 5432 && python manage.py collectstatic --no-input && 
       python manage.py migrate &&
       gunicorn -w 2 payment.wsgi:application -b 0.0.0.0:8000"
     ports:

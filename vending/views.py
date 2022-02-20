@@ -5,6 +5,9 @@ from rest_framework.permissions import IsAuthenticated, AllowAny, BasePermission
 from django.db import transaction
 from .models import Product, VendingUser
 from .serializers import ProductSerializer, UserSerializer
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class safe_methods(BasePermission):
@@ -87,15 +90,14 @@ def remain_coins(j):
 
 class OnlyBuyers(BasePermission):
     def has_permission(self, request, view):
-        if request.method != 'GET':
-            return VendingUser.objects.filter(username=request.user, role="buyer").exists()
+        return VendingUser.objects.filter(username=request.user, role="buyer").exists()
 
 
 class BuyerProductViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated & OnlyBuyers | safe_methods]
 
     def deposit(self, request):
-        """this view function deposit into buyer account, accpets only PATCH requests, for users with buyer roles.
+        """this view function deposit into buyer account, accepts only PATCH requests, for users with buyer roles.
         """
         acceptable_coins = [5, 10, 20, 50, 100]
         with transaction.atomic():
@@ -131,10 +133,12 @@ class BuyerProductViewSet(viewsets.ViewSet):
                 return Response({"product": "the requested product isn't available."},
                                 status=status.HTTP_400_BAD_REQUEST)
             if product.amount_available < 1:
+                logger.error(f"this product amount available is zero : {product.name}")
                 return Response({"product": "the requested product isn't available."},
                                 status=status.HTTP_400_BAD_REQUEST)
             target_user = VendingUser.objects.select_for_update().get(username=request.user)
             if target_user.deposit < product.cost:
+                logger.warning(f'This user doesn\'t have sufficient balance: {target_user.username}')
                 return Response({"deposit": "insufficient balance, please deposit more coins."},
                                 status=status.HTTP_400_BAD_REQUEST)
             final_deposit = target_user.deposit - product.cost
@@ -159,9 +163,10 @@ class BuyerProductViewSet(viewsets.ViewSet):
 def create_auth(request):
     """this view function creates a user so then the user can obtain a token
     """
-    seller = request.data.get("seller", False)
+    role = request.data.get("role", False)
     deposit = request.data.get("deposit", False)
-    if bool(seller) and bool(deposit):
+    if role == 'seller' and bool(deposit):
+        logger.warning(f'someone tried to make a user with seller role with deposit username: {request.data.get("username")}')
         return Response({"deposit": "seller doesn\'t need to deposit. :-("}, status=status.HTTP_400_BAD_REQUEST)
     serialized = UserSerializer(data=request.data)
     if serialized.is_valid(raise_exception=True):

@@ -98,9 +98,9 @@ The endpoint returns all user data, including the id, unless the password.<br>
 }`
 then send it to this API, and this API returns a token in JSON format, which you have to use like below 
 in the header of your request for further requests:`{Authorization: Token supersecrettoken}`.
-- /user/<username> PATCH it updates one or more fields of a user.
-- /user/<username> GET it retrieve the all data of a user unless the password.
-- /user/<username> DELETE it removes the user from the db, as well as the token which is belonged to that user.
+- /user/<user_name> PATCH it updates one or more fields of a user.
+- /user/<user_name> GET it retrieve the all data of a user unless the password.
+- /user/<user_name> DELETE it removes the user from the db, as well as the token which is belonged to that user.
 - /products GET returns all existing products in DB. everybody can call this endpoint. **It doesn't need Token**
 - /products POST you have to send one product as JSON in the request body. It needs a token in the header. 
 - /product/<product_id> GET retrieve the datas about that specific product.

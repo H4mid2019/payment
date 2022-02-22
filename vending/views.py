@@ -169,13 +169,18 @@ def create_auth(request):
     """this view function creates a user so then the user can obtain a token
     """
     role = request.data.get("role", False)
-    deposit = request.data.get("deposit", False)
-    if role == 'seller' and bool(deposit):
+    partial = False
+    if role == 'seller':
         logger.warning(f'someone tried to make a user with seller role with deposit username: {request.data.get("username")}')
-        return Response({"deposit": "seller doesn\'t need to deposit. :-("}, status=status.HTTP_400_BAD_REQUEST)
-    serialized = UserSerializer(data=request.data)
+        partial = True
+        request.data.pop('deposit', None)
+    serialized = UserSerializer(data=request.data, partial=partial)
     if serialized.is_valid(raise_exception=True):
-        serialized.save()
+        try:
+            serialized.save()
+        except KeyError as e:
+            logger.error(str(e))
+            return Response({"error": "pleas add this filed -->" + str(e).replace("\'", '')}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serialized.data, status=status.HTTP_201_CREATED)
     return Response(serialized._errors, status=status.HTTP_400_BAD_REQUEST)
 

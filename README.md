@@ -26,7 +26,7 @@
 which provides two different APIs for both roles buyer and provider (seller).
 <br> the buyers can deposit into their accounts. The sellers can't. <br> 
 If a seller adds a product, only that seller can change the product attributes.<br>
-Product names are unique. For products, only the endpoint which shows the list of products are open to everybody without credential <br>
+For products, only the endpoint which shows the list of products are open to everybody without credential <br>
 Both seller and buyer have to obtain a token. They have to create an account. <br>
 Creating user endpoint API is callable for everybody without Token.
 
@@ -103,12 +103,13 @@ in the header of your request for further requests:`{Authorization: Token supers
 - /user/<username> DELETE it removes the user from the db, as well as the token which is belonged to that user.
 - /products GET returns all existing products in DB. everybody can call this endpoint. **It doesn't need Token**
 - /products POST you have to send one product as JSON in the request body. It needs a token in the header. 
-- /product/<product_name> PUT updates the product attributes. Only the seller who builds it can update it.
-- /product/<product_name> DELETE it deletes the target product, only the seller who adds the product can perform this action.
+- /product/<product_id> GET retrieve the datas about that specific product.
+- /product/<product_id> PUT updates the product attributes. Only the seller who builds it can update it.
+- /product/<product_id> DELETE it deletes the target product, only the seller who adds the product can perform this action.
 - /buyer/deposit PATCH you have to call this with the amount you want as JSON in the body like `{"deposit": 5 }`, 
 it only accepts 5,10,20,50,100. 
 - /buyer/reset POST when you call this endpoint. It makes the user balance(deposit) zero.
-- /buyer/buy POST call this with the name of the product which you want to buy like `{"name": "<product_name>"}` 
+- /buyer/buy POST call this with the id of the product which you want to buy like `{"id": "<product_id>"}` 
 it returns how much did the buyer spent and remain deposit of the buyer, the product name
 
 ## 🚀 Deployment Suggestion <a name = "deployment"></a>

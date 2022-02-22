@@ -17,7 +17,7 @@ class ProductTest(TestCase):
     seller_token_key = ""
     buyer_token_key = ""
     buyer_username = ""
-    sample_product_name = ''
+    sample_product_id = 0
     sample_product_cost = ''
     seller_id = ''
     buyer_deposit = 0
@@ -40,7 +40,7 @@ class ProductTest(TestCase):
 
         sample_product = Product.objects.create(name=random_string(), amount_available=10, cost=50,
                                                 seller_id=user.id)
-        self.sample_product_name = sample_product.name
+        self.sample_product_id = sample_product.id
         self.sample_product_cost = sample_product.cost
         self.seller_id = user.id
         token = Token.objects.create(user=user)
@@ -105,17 +105,16 @@ class ProductTest(TestCase):
 
     def test_buy(self):
         self.api_client.credentials(HTTP_AUTHORIZATION='Token ' + self.buyer_token_key)
-        response = self.api_client.post(reverse("buy"), {"name": self.sample_product_name}, format="json")
+        response = self.api_client.post(reverse("buy"), {"id": self.sample_product_id}, format="json")
         self.assertEqual(response.status_code, 202)
-        self.assertEqual(response.data.get("product_name"), self.sample_product_name)
+        self.assertEqual(response.data.get("product_id"), self.sample_product_id)
         self.assertEqual(response.data.get("spent"), self.sample_product_cost)
 
     def test_buy_product_doesnt_exist(self):
-        product_names = list(Product.objects.values_list('name', flat=True))
-        random_name = random_string(12)
-        random_product_name = random_name if random_name not in product_names else random_string(15)
+        product_ids = list(Product.objects.values_list('id', flat=True))
+        random_id = max(product_ids) + 1
         self.api_client.credentials(HTTP_AUTHORIZATION='Token ' + self.buyer_token_key)
-        response = self.api_client.post(reverse("buy"), {"name": random_product_name}, format="json")
+        response = self.api_client.post(reverse("buy"), {"id": random_id}, format="json")
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.data.get("product"), "the requested product isn't available.")
 
@@ -123,12 +122,12 @@ class ProductTest(TestCase):
         self.api_client.credentials(HTTP_AUTHORIZATION='Token ' + self.buyer_token_key)
         response = self.api_client.post(reverse("buy"), format="json")
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.data.get("product"), "You have to enter product name to your request body.")
+        self.assertEqual(response.data.get("product"), "You have to enter product id to your request body.")
 
     def test_buy_product_zero_amount_available(self):
-        Product.objects.create(name='test_foo', amount_available=0, cost=50, seller_id=self.seller_id)
+        product = Product.objects.create(name='test_foo', amount_available=0, cost=50, seller_id=self.seller_id)
         self.api_client.credentials(HTTP_AUTHORIZATION='Token ' + self.buyer_token_key)
-        response = self.api_client.post(reverse("buy"), {"name": 'test_foo'}, format="json")
+        response = self.api_client.post(reverse("buy"), {"id": product.id}, format="json")
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.data.get("product"), "the requested product isn't available.")
 
@@ -138,26 +137,25 @@ class ProductTest(TestCase):
         # make sure the buyer deposit would be zero
         reset_response = self.api_client.post(reverse("reset"), format="json")
         self.assertEqual(reset_response.status_code, 201)
-        response = self.api_client.post(reverse("buy"), {"name": self.sample_product_name}, format="json")
+        response = self.api_client.post(reverse("buy"), {"id": self.sample_product_id}, format="json")
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.data.get("deposit"), "insufficient balance, please deposit more coins.")
 
     def test_delete_product(self):
         self.api_client.credentials(HTTP_AUTHORIZATION='Token ' + self.seller_token_key)
-        response = self.api_client.delete(f"/api/product/{self.sample_product_name}")
+        response = self.api_client.delete(f"/api/product/{self.sample_product_id}")
         self.assertEqual(response.status_code, 204)
         # check the product doesn't exist in db
-        product = Product.objects.filter(name=self.sample_product_name).first()
+        product = Product.objects.filter(name=self.sample_product_id).first()
         self.assertFalse(bool(product))
 
     def test_delete_product_does_not_exist(self):
-        product_names = list(Product.objects.values_list('name', flat=True))
-        random_name = random_string(12)
-        random_product_name = random_name if random_name not in product_names else random_string(15)
+        product_ids = list(Product.objects.values_list('id', flat=True))
+        random_id = max(product_ids) + 1
         self.api_client.credentials(HTTP_AUTHORIZATION='Token ' + self.seller_token_key)
-        response = self.api_client.delete(f"/api/product/{random_product_name}")
+        response = self.api_client.delete(f"/api/product/{random_id}")
         self.assertEqual(response.status_code, 400)
-        self.assertEqual("This product doesn't exist", response.data.get("name"))
+        self.assertEqual("This product doesn't exist", response.data.get("id"))
 
     def test_delete_from_another_seller_account(self):
         user = VendingUser(email=f"{random_string()}@{random_string()}.com", username=random_string(),
@@ -166,6 +164,6 @@ class ProductTest(TestCase):
         user.save()
         token = Token.objects.create(user=user)
         self.api_client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
-        response = self.api_client.delete(f"/api/product/{self.sample_product_name}")
+        response = self.api_client.delete(f"/api/product/{self.sample_product_id}")
         self.assertEqual(response.status_code, 400)
         self.assertEqual("you can\'t delete this product.", response.data.get("seller_id"))

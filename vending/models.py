@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 def validate_price(value):
     if value % 5 != 0:
         raise ValidationError(
-            _('%(value)s is not in expected range'),
+            _('%(value)s is not multiples of 5.'),
             params={'value': value},
         )
 
@@ -22,7 +22,7 @@ def validate_seller_id(value):
 
 
 class Product(models.Model):
-    name = models.CharField(max_length=120, unique=True)
+    name = models.CharField(max_length=120)
     cost = models.IntegerField(validators=[validate_price])
     amount_available = models.IntegerField()
     seller_id = models.IntegerField(validators=[validate_seller_id])

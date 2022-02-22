@@ -38,12 +38,17 @@ class ProductViewSet(viewsets.ViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer._errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def update(self, request, name=None):
+    def retrieve_one(self, request, product_id=None):
+        product = Product.objects.get(id=product_id)
+        serializer = ProductSerializer(product)
+        return Response(serializer.data)
+
+    def update(self, request, product_id=None):
         user_id = VendingUser.objects.filter(username=request.user).first().id
         with transaction.atomic():
-            product = Product.objects.select_for_update().get(name=name)
+            product = Product.objects.select_for_update().get(id=product_id)
             if not bool(product):
-                return Response({"name": "This product doesn't exist"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"id": "This product doesn't exist"}, status=status.HTTP_400_BAD_REQUEST)
             if product.seller_id != user_id:
                 return Response({"seller_id": "you can\'t update this product."}, status=status.HTTP_400_BAD_REQUEST)
             request_seller_id = request.data.get("seller_id")
@@ -54,13 +59,13 @@ class ProductViewSet(viewsets.ViewSet):
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
 
-    def destroy(self, request, name=None):
+    def destroy(self, request, product_id=None):
         user_id = VendingUser.objects.filter(username=request.user).first().id
         with transaction.atomic():
             try:
-                product = Product.objects.select_for_update().get(name=name)
+                product = Product.objects.select_for_update().get(id=product_id)
             except Product.DoesNotExist:
-                return Response({"name": "This product doesn't exist"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"id": "This product doesn't exist"}, status=status.HTTP_400_BAD_REQUEST)
             if product.seller_id != user_id:
                 return Response({"seller_id": "you can\'t delete this product."}, status=status.HTTP_400_BAD_REQUEST)
             product.delete()
@@ -123,17 +128,17 @@ class BuyerProductViewSet(viewsets.ViewSet):
 
     def buy(self, request):
         with transaction.atomic():
-            request_product_name = request.data.get("name", False)
-            if not request_product_name:
-                return Response({"product": "You have to enter product name to your request body."},
+            request_product_id = request.data.get("id", False)
+            if not request_product_id:
+                return Response({"product": "You have to enter product id to your request body."},
                                 status=status.HTTP_400_BAD_REQUEST)
             try:
-                product = Product.objects.select_for_update().get(name=request_product_name)
+                product = Product.objects.select_for_update().get(id=request_product_id)
             except Product.DoesNotExist:
                 return Response({"product": "the requested product isn't available."},
                                 status=status.HTTP_400_BAD_REQUEST)
             if product.amount_available < 1:
-                logger.error(f"this product amount available is zero : {product.name}")
+                logger.error(f"this product amount available is zero : {product.id}")
                 return Response({"product": "the requested product isn't available."},
                                 status=status.HTTP_400_BAD_REQUEST)
             target_user = VendingUser.objects.select_for_update().get(username=request.user)

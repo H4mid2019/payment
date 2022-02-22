@@ -8,9 +8,10 @@ urlpatterns = [
         'get': 'list',
         'post': 'create'
     })),
-    path('product/<str:name>', ProductViewSet.as_view({
+    path('product/<int:product_id>', ProductViewSet.as_view({
         'put': 'update',
-        'delete': 'destroy'
+        'delete': 'destroy',
+        'get': 'retrieve_one'
     })),
     path('user/<str:username>', UserViewSet.as_view({
         'patch': 'update',

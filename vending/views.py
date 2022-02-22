@@ -49,10 +49,10 @@ class ProductViewSet(viewsets.ViewSet):
             request_seller_id = request.data.get("seller_id")
             if request_seller_id and request_seller_id != product.seller_id:
                 return Response({"seller_id": "seller_id it's not changeable."}, status=status.HTTP_400_BAD_REQUEST)
-            serialezer = ProductSerializer(product, data=request.data)
-            if serialezer.is_valid(raise_exception=True):
-                serialezer.save()
-                return Response(serialezer.data, status=status.HTTP_202_ACCEPTED)
+            serializer = ProductSerializer(product, data=request.data)
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
 
     def destroy(self, request, name=None):
         user_id = VendingUser.objects.filter(username=request.user).first().id
@@ -173,3 +173,26 @@ def create_auth(request):
         serialized.save()
         return Response(serialized.data, status=status.HTTP_201_CREATED)
     return Response(serialized._errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def update(self, request, username=None):
+        with transaction.atomic():
+            user = VendingUser.objects.select_for_update().get(username=username)
+            serializer = UserSerializer(user, data=request.data, partial=True)
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+
+    def destroy(self, request, username=None):
+        with transaction.atomic():
+            user = VendingUser.objects.select_for_update().get(username=username)
+            user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def read(self, request, username=None):
+        user = VendingUser.objects.get(username=username)
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)

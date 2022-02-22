@@ -1,6 +1,6 @@
 from django.urls import path
 from rest_framework.authtoken.views import obtain_auth_token
-from .views import ProductViewSet, create_auth, BuyerProductViewSet
+from .views import ProductViewSet, create_auth, BuyerProductViewSet, UserViewSet
 
 
 urlpatterns = [
@@ -11,6 +11,11 @@ urlpatterns = [
     path('product/<str:name>', ProductViewSet.as_view({
         'put': 'update',
         'delete': 'destroy'
+    })),
+    path('user/<str:username>', UserViewSet.as_view({
+        'patch': 'update',
+        'delete': 'destroy',
+        'get': 'read'
     })),
     path('get_token', obtain_auth_token, name='get_auth_token'),
     path("create_user", create_auth, name="create_user"),
